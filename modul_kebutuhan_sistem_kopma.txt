@@ -1,0 +1,256 @@
+================================================================================
+                    MODUL PEMBELAJARAN & ANALISIS KEBUTUHAN SISTEM
+                     SISTEM INFORMASI KOPERASI MAHASISWA (SI-KOPMA)
+================================================================================
+Mata Kuliah : Basis Data Lanjut / Rekayasa Perangkat Lunak
+Studi Kasus : Koperasi Mahasiswa (KOPMA) Terintegrasi POS & SHU
+Format      : Modul Teks Berstruktur Abjad (A, B, C, D, E, F, G, H, I, J)
+Target NIM  : kopma_npm
+================================================================================
+
+DAFTAR SUB-BAB:
+  A. PENDAHULUAN DAN LATAR BELAKANG KOPMA
+  B. IDENTIFIKASI MASALAH DAN TUJUAN SISTEM
+  C. ANALISIS PENGGUNA (AKTOR) DAN HAK AKSES (RBAC)
+  D. SPESIFIKASI KEBUTUHAN FUNGSIONAL SISTEM (FUNCTIONAL REQUIREMENTS)
+  E. SPESIFIKASI KEBUTUHAN NON-FUNGSIONAL (NON-FUNCTIONAL REQUIREMENTS)
+  F. LOGIKA BISNIS DAN FORMULA MATEMATIS PERHITUNGAN SHU
+  G. PERANCANGAN BASIS DATA RELASIONAL (DATABASE SCHEMA & ENTITAS)
+  H. IMPLEMENTASI TRANSAKSI BASIS DATA ACID & PENANGANAN KONKURENSI
+  I. ARSITEKTUR DAN STRUKTUR IMPLEMENTASI FRAMEWORK LARAVEL
+  J. KESIMPULAN DAN REKOMENDASI PENGEMBANGAN SISTEM
+
+================================================================================
+A. PENDAHULUAN DAN LATAR BELAKANG KOPMA
+================================================================================
+1. Pengertian KOPMA:
+   Koperasi Mahasiswa (KOPMA) adalah badan usaha berbadan hukum yang didirikan,
+   dikelola, dan ditujukan untuk memenuhi kebutuhan ekonomi serta kesejahteraan
+   mahasiswa di lingkungan kampus dengan asas kekeluargaan dan gotong royong.
+
+2. Ciri Khas KOPMA Dibandingkan Unit Usaha Ritel Swasta:
+   a. Keanggotaan Bersifat Sukarela dan Terbuka bagi seluruh civitas mahasiswa.
+   b. Status Mahasiswa sebagai Pemilik Sekaligus Pelanggan:
+      - Sebagai PEMILIK: Menyetorkan simpanan (modal) dan memiliki hak suara.
+      - Sebagai PELANGGAN: Membeli produk di toko/unit usaha KOPMA.
+   c. Struktur Simpanan Terbagi Tiga:
+      - Simpanan Pokok: Dibayar 1 kali saat sah menjadi anggota.
+      - Simpanan Wajib: Disetor berkala (setiap bulan atau semester).
+      - Simpanan Sukarela: Saldo tabungan bebas yang dapat diambil sewaktu-waktu.
+   d. Pembagian Sisa Hasil Usaha (SHU):
+      Keuntungan bersih tahun buku dikembalikan kepada anggota sesuai keaktifan
+      modal simpanan dan volume transaksi belanja di koperasi.
+
+================================================================================
+B. IDENTIFIKASI MASALAH DAN TUJUAN SISTEM
+================================================================================
+1. Permasalahan Sistem Konvensional/Manual:
+   a. Catatan pembukuan kasir terpisah dari database keanggotaan mahasiswa.
+   b. Kasir toko kesulitan mengidentifikasi pembeli anggota vs non-anggota,
+      sehingga diskon/harga khusus anggota sering keliru diterapkan.
+   c. Perhitungan SHU di akhir tahun membutuhkan waktu berhari-hari karena
+      harus merekap bon nota belanja fisik dan buku mutasi simpanan manual.
+   d. Sering terjadi selisih stok (stock loss) dan rawan kecurangan (fraud).
+
+2. Tujuan Pembangunan Sistem (SI-KOPMA):
+   a. Mengintegrasikan master keanggotaan, unit simpanan, modul kasir (POS),
+      dan kalkulasi SHU dalam satu kesatuan sistem basis data terpusat.
+   b. Menyediakan fitur scan kartu anggota digital (Barcode/QR Code) di kasir.
+   c. Mengotomatisasi pembagian SHU secara presisi menggunakan query agregasi.
+   d. Menjamin integritas data transaksi kasir dan mutasi saldo simpanan dengan
+      penerapan ACID Transactions.
+
+================================================================================
+C. ANALISIS PENGGUNA (AKTOR) DAN HAK AKSES (RBAC)
+================================================================================
+Sistem menerapkan kontrol akses berbasis peran (Role-Based Access Control):
+
+1. PENGURUS / SUPER ADMIN
+   - Akses menyeluruh ke seluruh modul sistem.
+   - Manajemen akun operator/petugas dan penetapan kebijakan simpanan.
+   - Proses tutup buku tahunan (closing accounting period).
+   - Melihat dashboard ringkasan statistik dan analitik KOPMA.
+
+2. PETUGAS KASIR (POINT OF SALE)
+   - Melakukan transaksi penjualan barang di toko fisik.
+   - Memindai barcode produk dan kartu tanda anggota mahasiswa.
+   - Menerima pembayaran (Tunai, QRIS, maupun Potong Saldo Simpanan Sukarela).
+   - Mencetak struk bukti pembelian dan merekap kas kasir harian.
+
+3. BENDAHARA / BAGIAN KEUANGAN
+   - Memverifikasi setoran simpanan pokok, wajib, dan sukarela.
+   - Menyetujui dan mencairkan penarikan simpanan sukarela anggota.
+   - Mencatat pengeluaran operasional dan penerimaan kas.
+   - Mengontrol validitas alokasi dana SHU.
+
+4. ANGGOTA (MAHASISWA)
+   - Menampilkan profil dan KTA Digital dengan QR Code.
+   - Melihat riwayat setoran dan sisa saldo simpanan secara realtime.
+   - Memeriksa histori nota transaksi belanja di toko KOPMA.
+   - Memantau rincian perolehan bagian SHU tahunan.
+
+================================================================================
+D. SPESIFIKASI KEBUTUHAN FUNGSIONAL SISTEM (FUNCTIONAL REQUIREMENTS)
+================================================================================
+[MODUL 1: MANAJEMEN ANGGOTA]
+- FR-01: Sistem dapat mencatat registrasi anggota baru (NIM, Nama, Jurusan,
+         Fakultas, No Telepon, Email, Status).
+- FR-02: Sistem dapat memvalidasi dan memperbarui status anggota (Aktif, Cuti, Lulus).
+- FR-03: Sistem dapat menghasilkan Kartu Anggota Digital berformat QR Code / Barcode.
+
+[MODUL 2: SIMPANAN & MUTASI SALDO]
+- FR-04: Sistem dapat mengklasifikasikan jenis simpanan (Pokok, Wajib, Sukarela).
+- FR-05: Sistem dapat mencatat setoran simpanan masuk dengan kode referensi unik.
+- FR-06: Sistem dapat memvalidasi penarikan simpanan sukarela agar tidak melebihi
+         saldo yang tersedia.
+- FR-07: Sistem dapat menampilkan riwayat buku mutasi rekening simpanan anggota.
+
+[MODUL 3: MANAJEMEN INVENTARIS TOKO]
+- FR-08: Sistem dapat mengelola master barang (Barcode, Nama, Kategori, Harga Beli,
+         Harga Jual Umum, Harga Jual Anggota, Stok, Batas Minimum Stok).
+- FR-09: Sistem dapat mencatat transaksi restock barang masuk dari supplier.
+- FR-10: Sistem dapat memberikan notifikasi alert ketika stok barang menipis.
+
+[MODUL 4: KASIR / POINT OF SALE (POS)]
+- FR-11: Sistem dapat memindai barcode produk dan memasukkannya ke keranjang belanja.
+- FR-12: Sistem dapat mendeteksi nomor anggota untuk memberikan diskon/harga anggota
+         serta mencatat poin akumulasi belanja tahunan.
+- FR-13: Sistem dapat memproses metode pembayaran (Tunai, QRIS, Saldo Simpanan).
+- FR-14: Sistem otomatis mengurangi jumlah stok barang dan mencetak struk belanja.
+
+[MODUL 5: KALKULASI SISA HASIL USAHA (SHU)]
+- FR-15: Sistem dapat menghitung Jasa Modal Anggota (JMA) berdasarkan simpanan.
+- FR-16: Sistem dapat menghitung Jasa Usaha Anggota (JUA) berdasarkan belanja.
+- FR-17: Sistem dapat mengeksekusi tutup buku dan mendistribusikan SHU ke saldo
+         simpanan sukarela masing-masing anggota.
+
+[MODUL 6: PELAPORAN & ANALITIK]
+- FR-18: Sistem dapat mencetak laporan penjualan (harian/bulanan/tahunan).
+- FR-19: Sistem dapat menyajikan laporan laba kotor toko dan produk terlaris.
+- FR-20: Sistem dapat menyajikan laporan posisi keuangan kas & saldo simpanan.
+
+================================================================================
+E. SPESIFIKASI KEBUTUHAN NON-FUNGSIONAL (NON-FUNCTIONAL REQUIREMENTS)
+================================================================================
+1. Keamanan Data (Security):
+   - Enkripsi kata sandi wajib menggunakan algoritma Hashing Bcrypt/Argon2.
+   - Proteksi Cross-Site Request Forgery (CSRF) dan SQL Injection pada seluruh form.
+   - Pembatasan rute halaman berdasarkan middleware otentikasi peran (RBAC).
+
+2. Performa dan Waktu Respons (Performance):
+   - Latensi pencarian produk di kasir maksimal 500 milidetik (0.5 detik).
+   - Efisiensi query database menggunakan Indexing pada kolom pencarian
+     kritis (`nim`, `kode_barcode`, `no_struk`).
+
+3. Integritas dan Keandalan Data (Reliability & ACID Compliance):
+   - Seluruh transaksi kasir dan mutasi saldo wajib menerapkan DB Transactions
+     (Atomic: berhasil seluruhnya atau dibatalkan seutuhnya tanpa sisa data corrupt).
+   - Otomatisasi pencadangan database (Auto-Backup) terjadwal.
+
+4. Usabilitas (Usability):
+   - Layar kasir (POS) dioptimalkan untuk navigasi cepat via keyboard (hotkeys).
+   - Antarmuka responsif dan ramah perangkat seluler untuk portal mahasiswa.
+
+================================================================================
+F. LOGIKA BISNIS DAN FORMULA MATEMATIS PERHITUNGAN SHU
+================================================================================
+Sesuai prinsip koperasi, alokasi SHU untuk anggota dibagi 2 komponen:
+1. Jasa Modal Anggota (JMA)   -> Alokasi contoh: 40% dari total SHU Anggota
+2. Jasa Usaha Anggota (JUA)   -> Alokasi contoh: 60% dari total SHU Anggota
+
+Rumus Matematis:
+  Total SHU Anggota (i) = JMA(i) + JUA(i)
+
+  JMA(i) = (Total Simpanan Anggota(i) / Total Simpanan Seluruh Anggota) * Total Dana JMA
+  JUA(i) = (Total Belanja Anggota(i)  / Total Belanja Seluruh Anggota)  * Total Dana JUA
+
+SIMULASI ANGKA NYATA:
+  - Total SHU Bagian Anggota     = Rp 10.000.000,-
+  - Alokasi JMA (40%)            = Rp  4.000.000,-
+  - Alokasi JUA (60%)            = Rp  6.000.000,-
+  - Total Simpanan Seluruh KOPMA = Rp 80.000.000,-
+  - Total Belanja Seluruh Anggota= Rp 40.000.000,-
+
+  Mahasiswa bernama "Ahmad" (NIM kopma_npm):
+  - Total Simpanan Ahmad         = Rp  2.000.000,-
+  - Total Belanja Toko Ahmad     = Rp  1.000.000,-
+
+  Perhitungan Bagian Ahmad:
+  - JMA Ahmad = (2.000.000 / 80.000.000) * 4.000.000 = Rp 100.000,-
+  - JUA Ahmad = (1.000.000 / 40.000.000) * 6.000.000 = Rp 150.000,-
+  - Total SHU yang diterima Ahmad = Rp 100.000 + Rp 150.000 = Rp 250.000,-
+
+================================================================================
+G. PERANCANGAN BASIS DATA RELASIONAL (DATABASE SCHEMA & ENTITAS)
+================================================================================
+Berikut 8 tabel utama yang saling berelasi:
+
+1. `users`             : Kredensial dan otentikasi login sistem (admin/kasir/bendahara).
+2. `anggotas`          : Data master identitas mahasiswa anggota KOPMA.
+3. `jenis_simpanans`   : Data acuan jenis simpanan (Pokok, Wajib, Sukarela).
+4. `transaksi_simpanans`: Pencatatan mutasi kas simpanan anggota (debit/kredit).
+5. `kategori_barangs`  : Pengelompokan jenis barang unit usaha minimarket.
+6. `barangs`           : Master data produk, barcode, harga umum, harga anggota, stok.
+7. `penjualans`        : Header transaksi pembayaran nota di kasir POS.
+8. `penjualan_details` : Item rincian barang, jumlah beli, dan subtotal harga.
+
+Relasi Utama:
+- anggotas          1 --- N  transaksi_simpanans
+- jenis_simpanans   1 --- N  transaksi_simpanans
+- kategori_barangs  1 --- N  barangs
+- anggotas (opsi)   1 --- N  penjualans
+- users (kasir)     1 --- N  penjualans
+- penjualans        1 --- N  penjualan_details
+- barangs           1 --- N  penjualan_details
+
+================================================================================
+H. IMPLEMENTASI TRANSAKSI BASIS DATA ACID & PENANGANAN KONKURENSI
+================================================================================
+Dalam Laravel, konsep ACID diwujudkan menggunakan:
+  DB::beginTransaction();
+  try {
+      // 1. Simpan header penjualan
+      // 2. Simpan setiap item di penjualan_detail
+      // 3. Kurangi stok barang (stok = stok - qty)
+      // 4. Jika bayar pakai saldo simpanan, potong saldo simpanan sukarela
+      DB::commit();
+  } catch (\Exception $e) {
+      DB::rollBack();
+      // Mengembalikan kondisi database ke posisi semula sebelum error terjadi
+  }
+
+Kaidah ACID:
+- Atomicity   : Semua langkah berhasil, atau jika ada 1 gagal seluruhnya batal.
+- Consistency : Stok barang dan nominal kas selalu seimbang dan valid.
+- Isolation   : Transaksi kasir satu tidak bercampur dengan kasir lain.
+- Durability  : Data yang berhasil di-commit tersimpan permanen di database.
+
+================================================================================
+I. ARSITEKTUR DAN STRUKTUR IMPLEMENTASI FRAMEWORK LARAVEL
+================================================================================
+Struktur file implementasi Laravel untuk proyek KOPMA ini berada pada folder:
+`kopma_npm/laravel_kopma/`
+
+Rincian Komponen:
+1. Migrations (`database/migrations/`):
+   - Blueprint DDL tabel users, anggotas, simpanans, barangs, penjualans, details.
+2. Models & Eloquent ORM (`app/Models/`):
+   - Relasi `hasMany`, `belongsTo`, serta helper kalkulasi saldo.
+3. Controllers (`app/Http/Controllers/`):
+   - `AnggotaController`    : Pendaftaran dan kartu KTA digital.
+   - `SimpananController`   : Setor/tarik simpanan.
+   - `KasirController`      : POS kasir, scan barcode, diskon anggota, DB Transaction.
+   - `ShuController`        : Algoritma kalkulasi dan distribusi pembagian SHU.
+4. Routes (`routes/web.php`):
+   - Peta endpoint aplikasi KOPMA.
+
+================================================================================
+J. KESIMPULAN DAN REKOMENDASI PENGEMBANGAN SISTEM
+================================================================================
+1. Sistem KOPMA menuntut integrasi antara unit keanggotaan, unit simpanan uang,
+   dan unit perdagangan riil (kasir POS).
+2. Perhitungan SHU berbasis database relasional mampu menghemat waktu penutupan
+   buku tahunan dari berminggu-minggu menjadi hitungan detik.
+3. Arsitektur MVC Laravel mempermudah pemisahan logika transaksi database yang aman
+   dengan antarmuka kasir yang interaktif dan modern.
+================================================================================
